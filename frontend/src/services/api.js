@@ -9,7 +9,19 @@ const api = axios.create({
   },
 });
 
+// Get all pages with metadata
 export const getAllPages = async () => {
+  try {
+    const response = await api.get('/pages');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching pages:', error);
+    return [];
+  }
+};
+
+// Get all pages (legacy - returns full data)
+export const getAllPagesData = async () => {
   try {
     const response = await api.get('/page');
     return response.data;
@@ -29,6 +41,16 @@ export const getPageContent = async (pageName) => {
   }
 };
 
+export const createPage = async (pageName, content) => {
+  try {
+    const response = await api.post(`/page/${pageName}`, content);
+    return response.data;
+  } catch (error) {
+    console.error(`Error creating page ${pageName}:`, error);
+    throw error;
+  }
+};
+
 export const savePageContent = async (pageName, content) => {
   try {
     const response = await api.post(`/page/${pageName}`, content);
@@ -45,6 +67,17 @@ export const updatePageContent = async (pageName, content) => {
     return response.data;
   } catch (error) {
     console.error(`Error updating page ${pageName}:`, error);
+    throw error;
+  }
+};
+
+// Update page sections order
+export const updatePageSectionsOrder = async (pageName, sections) => {
+  try {
+    const response = await api.put(`/page/${pageName}/sections`, { sections });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating sections for page ${pageName}:`, error);
     throw error;
   }
 };
