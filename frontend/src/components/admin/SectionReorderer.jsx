@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import './SectionReorderer.css';
-import { getCustomTemplates } from './SectionEditor';
 
-const SectionReorderer = ({ pageName, sections, onSave, onEditSection, onCreateCustomSection, sectionData = {}, saving }) => {
-  const [orderSections, setOrderSections] = useState(sections || []);
+const SectionReorderer = ({ pageName, sections, onSave, onEditSection, onCreateCustomSection, sectionData = {}, customTemplates = {}, saving }) => {
+  // Normalize sections - Firebase may return object instead of array
+  const normalizedSections = Array.isArray(sections) ? sections : sections ? Object.values(sections) : [];
+  const [orderSections, setOrderSections] = useState(normalizedSections);
   const [draggedItem, setDraggedItem] = useState(null);
-  const [customTemplates, setCustomTemplates] = useState({});
 
+  // Keep orderSections in sync when the sections prop changes
   useEffect(() => {
-    // Load custom templates when component mounts or updates
-    setCustomTemplates(getCustomTemplates());
-  }, []);
+    const normalized = Array.isArray(sections) ? sections : sections ? Object.values(sections) : [];
+    setOrderSections(normalized);
+  }, [sections]);
 
   const defaultSections = ['hero', 'about', 'services', 'contact'];
-  const allAvailableSections = [...defaultSections, ...Object.keys(customTemplates)];
+  const allAvailableSections = [...new Set([
+    ...defaultSections,
+    ...Object.keys(customTemplates),
+    ...Object.keys(sectionData)
+  ])];
   const unusedSections = allAvailableSections.filter(s => !orderSections.includes(s));
 
   const handleDragStart = (e, section, source) => {

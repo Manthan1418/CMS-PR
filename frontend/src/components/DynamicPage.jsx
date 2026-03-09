@@ -46,8 +46,13 @@ const DynamicPage = () => {
   const { navbar, footer, metadata, sections = {} } = pageData;
 
   // Get sections order from metadata or use default order
-  const sectionsOrder = metadata?.sections ||
-    ['hero', 'about', 'services', 'contact'];
+  // Firebase may convert arrays to objects with numeric keys
+  const rawSections = metadata?.sections;
+  const sectionsOrder = Array.isArray(rawSections)
+    ? rawSections
+    : rawSections
+      ? Object.values(rawSections)
+      : ['hero', 'about', 'services', 'contact'];
 
   return (
     <div className="app">

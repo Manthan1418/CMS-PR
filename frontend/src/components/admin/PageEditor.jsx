@@ -62,8 +62,12 @@ const PageEditor = ({ page, onPageUpdate }) => {
   const handleSaveSection = async (sectionName, sectionData) => {
     try {
       setSaving(true);
+      const metaSections = Array.isArray(pageData.metadata?.sections)
+        ? pageData.metadata.sections
+        : Object.values(pageData.metadata?.sections || {});
       const updatedData = {
         ...pageData,
+        metadata: { ...pageData.metadata, sections: metaSections },
         sections: {
           ...pageData.sections,
           [sectionName]: sectionData
@@ -81,21 +85,53 @@ const PageEditor = ({ page, onPageUpdate }) => {
     }
   };
 
-  const handleCreateCustomSection = (newSection) => {
-    // Save the custom section template to localStorage
-    const customTemplates = JSON.parse(localStorage.getItem('customSectionTemplates') || '{}');
-    customTemplates[newSection.name] = {
-      title: newSection.title,
-      fields: newSection.fields
-    };
-    localStorage.setItem('customSectionTemplates', JSON.stringify(customTemplates));
+  const handleCreateCustomSection = async (newSection) => {
+    try {
+      setSaving(true);
+      // Build initial data for the section from its fields, with a title
+      const initialData = { title: newSection.title };
+      newSection.fields.forEach(f => {
+        if (f.name !== 'title') {
+          initialData[f.name] = '';
+        }
+      });
 
-    // Close the creator and show success message
-    setShowCustomCreator(false);
-    alert(`Custom section type "${newSection.title}" created successfully!`);
+      const currentSections = Array.isArray(pageData.metadata?.sections)
+        ? pageData.metadata.sections
+        : Object.values(pageData.metadata?.sections || {});
 
-    // Force a re-render of section reorderer by updating state
-    setPageData({ ...pageData });
+      const updatedData = {
+        ...pageData,
+        sections: {
+          ...pageData.sections,
+          [newSection.name]: initialData
+        },
+        metadata: {
+          ...pageData.metadata,
+          sections: [...currentSections, newSection.name]
+        },
+        customSectionTemplates: {
+          ...(pageData.customSectionTemplates || {}),
+          [newSection.name]: {
+            title: newSection.title,
+            fields: newSection.fields
+          }
+        }
+      };
+
+      await updatePageContent(page.name, updatedData);
+      // Re-fetch to get Firebase-normalized data
+      const freshData = await getPageContent(page.name);
+      setPageData(freshData || updatedData);
+      setShowCustomCreator(false);
+      alert(`Custom section "${newSection.title}" created and added to the page!`);
+      onPageUpdate();
+    } catch (err) {
+      console.error('Error creating custom section:', err);
+      alert('Failed to create custom section');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -116,8 +152,16 @@ const PageEditor = ({ page, onPageUpdate }) => {
   }
 
   // Set defaults for missing properties
+  // Normalize metadata.sections — Firebase may return an object instead of array
+  const rawMetaSections = pageData.metadata?.sections;
+  const normalizedSections = Array.isArray(rawMetaSections)
+    ? rawMetaSections
+    : rawMetaSections
+      ? Object.values(rawMetaSections)
+      : [];
+
   const defaultPageData = {
-    metadata: pageData.metadata || { title: page.title, sections: [], createdAt: new Date().toISOString() },
+    metadata: { ...(pageData.metadata || { title: page.title, createdAt: new Date().toISOString() }), sections: normalizedSections },
     navbar: pageData.navbar || { logo: '', links: [] },
     sections: pageData.sections || {},
     footer: pageData.footer || { companyName: '', copyright: '', socialLinks: [] },
@@ -129,6 +173,7 @@ const PageEditor = ({ page, onPageUpdate }) => {
         pageName={page.name}
         sectionName={editingSection}
         sectionData={defaultPageData.sections[editingSection] || {}}
+        customTemplates={pageData.customSectionTemplates || {}}
         onSave={handleSaveSection}
         onCancel={() => setEditingSection(null)}
         saving={saving}
@@ -174,6 +219,7 @@ const PageEditor = ({ page, onPageUpdate }) => {
             onEditSection={setEditingSection}
             onCreateCustomSection={() => setShowCustomCreator(true)}
             sectionData={defaultPageData.sections}
+            customTemplates={pageData.customSectionTemplates || {}}
             saving={saving}
           />
         )}

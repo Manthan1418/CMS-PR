@@ -4,11 +4,22 @@ import './CustomSectionCreator.css';
 const CustomSectionCreator = ({ onClose, onCreateSection }) => {
   const [sectionName, setSectionName] = useState('');
   const [fields, setFields] = useState([
-    { name: '', label: '', type: 'text', required: false }
+    { name: '', label: '', type: 'text', required: false, preview: '' }
   ]);
   const [error, setError] = useState('');
 
-  const fieldTypes = ['text', 'textarea', 'email', 'tel', 'url', 'number'];
+  const fieldTypes = [
+    { value: 'text', label: 'Short Text' },
+    { value: 'textarea', label: 'Text Block' },
+    { value: 'richtext', label: 'Rich Text (HTML)' },
+    { value: 'image', label: 'Image URL' },
+    { value: 'color', label: 'Color Picker' },
+    { value: 'list', label: 'List / Repeater' },
+    { value: 'email', label: 'Email' },
+    { value: 'tel', label: 'Phone' },
+    { value: 'url', label: 'URL' },
+    { value: 'number', label: 'Number' },
+  ];
 
   const handleSectionNameChange = (e) => {
     const value = e.target.value.toLowerCase().replace(/\s+/g, '-');
@@ -23,7 +34,7 @@ const CustomSectionCreator = ({ onClose, onCreateSection }) => {
   };
 
   const handleAddField = () => {
-    setFields([...fields, { name: '', label: '', type: 'text', required: false }]);
+    setFields([...fields, { name: '', label: '', type: 'text', required: false, preview: '' }]);
   };
 
   const handleRemoveField = (index) => {
@@ -76,7 +87,7 @@ const CustomSectionCreator = ({ onClose, onCreateSection }) => {
 
       onCreateSection(newSection);
       setSectionName('');
-      setFields([{ name: '', label: '', type: 'text', required: false }]);
+      setFields([{ name: '', label: '', type: 'text', required: false, preview: '' }]);
       setError('');
     }
   };
@@ -141,8 +152,8 @@ const CustomSectionCreator = ({ onClose, onCreateSection }) => {
                       value={field.type}
                       onChange={(e) => handleFieldChange(index, 'type', e.target.value)}
                     >
-                      {fieldTypes.map(type => (
-                        <option key={type} value={type}>{type}</option>
+                      {fieldTypes.map(ft => (
+                        <option key={ft.value} value={ft.value}>{ft.label}</option>
                       ))}
                     </select>
                   </div>
@@ -158,6 +169,96 @@ const CustomSectionCreator = ({ onClose, onCreateSection }) => {
                     </label>
                   </div>
                 </div>
+
+                {/* Type-specific preview */}
+                {field.type === 'image' && (
+                  <div className="type-preview image-preview-box">
+                    <label>Preview: Image URL</label>
+                    <input
+                      type="url"
+                      placeholder="Paste an image URL to preview..."
+                      value={field.preview || ''}
+                      onChange={(e) => handleFieldChange(index, 'preview', e.target.value)}
+                    />
+                    {field.preview && (
+                      <div className="preview-image-container">
+                        <img
+                          src={field.preview}
+                          alt="Preview"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                          onLoad={(e) => { e.target.style.display = 'block'; }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {field.type === 'color' && (
+                  <div className="type-preview color-preview-box">
+                    <label>Preview: Color Picker</label>
+                    <div className="color-preview-row">
+                      <input
+                        type="color"
+                        value={field.preview || '#007bff'}
+                        onChange={(e) => handleFieldChange(index, 'preview', e.target.value)}
+                      />
+                      <span className="color-value">{field.preview || '#007bff'}</span>
+                      <span className="color-swatch" style={{ background: field.preview || '#007bff' }}></span>
+                    </div>
+                  </div>
+                )}
+
+                {field.type === 'richtext' && (
+                  <div className="type-preview richtext-preview-box">
+                    <label>Preview: Rich Text Editor</label>
+                    <div className="richtext-sample">
+                      <div className="sample-toolbar">
+                        <span className="sample-btn"><b>B</b></span>
+                        <span className="sample-btn"><i>I</i></span>
+                        <span className="sample-btn"><u>U</u></span>
+                        <span className="sample-btn">&#8226; List</span>
+                        <span className="sample-btn">Link</span>
+                        <span className="sample-btn">H2</span>
+                      </div>
+                      <div className="sample-content">Users will be able to write formatted text with <b>bold</b>, <i>italic</i>, lists, links, and headings here.</div>
+                    </div>
+                  </div>
+                )}
+
+                {field.type === 'textarea' && (
+                  <div className="type-preview textarea-preview-box">
+                    <label>Preview: Text Block</label>
+                    <textarea
+                      rows="3"
+                      placeholder="This is how the multi-line text area will look..."
+                      value={field.preview || ''}
+                      onChange={(e) => handleFieldChange(index, 'preview', e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {field.type === 'list' && (
+                  <div className="type-preview list-preview-box">
+                    <label>Preview: List / Repeater</label>
+                    <div className="list-sample">
+                      <div className="list-sample-item"><span>Item 1</span><span className="sample-remove">×</span></div>
+                      <div className="list-sample-item"><span>Item 2</span><span className="sample-remove">×</span></div>
+                      <span className="sample-add">+ Add Item</span>
+                    </div>
+                  </div>
+                )}
+
+                {(field.type === 'text' || field.type === 'email' || field.type === 'tel' || field.type === 'url' || field.type === 'number') && (
+                  <div className="type-preview basic-preview-box">
+                    <label>Preview: {fieldTypes.find(ft => ft.value === field.type)?.label}</label>
+                    <input
+                      type={field.type}
+                      placeholder={`Sample ${fieldTypes.find(ft => ft.value === field.type)?.label.toLowerCase()} input...`}
+                      value={field.preview || ''}
+                      onChange={(e) => handleFieldChange(index, 'preview', e.target.value)}
+                    />
+                  </div>
+                )}
 
                 {fields.length > 1 && (
                   <button

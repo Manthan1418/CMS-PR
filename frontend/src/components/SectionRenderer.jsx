@@ -14,12 +14,29 @@ const sectionComponents = {
 
 // Generic section component for custom sections
 const GenericSection = ({ title, ...props }) => {
-  return (
+  return ( 
     <section className="generic-section">
       {title && <h2>{title}</h2>}
       <div className="generic-content">
         {Object.entries(props).map(([key, value]) => {
           if (key === 'title') return null;
+
+          // Render image fields
+          if (typeof value === 'string' && (value.match(/\.(jpg|jpeg|png|gif|svg|webp)$/i) || value.startsWith('data:image'))) {
+            return (
+              <div key={key} className="generic-field generic-image">
+                <img src={value} alt={key} />
+              </div>
+            );
+          }
+
+          // Render rich text / HTML content
+          if (typeof value === 'string' && value.includes('<')) {
+            return (
+              <div key={key} className="generic-field generic-richtext" dangerouslySetInnerHTML={{ __html: value }} />
+            );
+          }
+
           if (typeof value === 'string' || typeof value === 'number') {
             return (
               <div key={key} className="generic-field">
@@ -29,13 +46,13 @@ const GenericSection = ({ title, ...props }) => {
           }
           if (Array.isArray(value)) {
             return (
-              <div key={key} className="generic-array">
+              <ul key={key} className="generic-list">
                 {value.map((item, idx) => (
-                  <div key={idx} className="generic-item">
+                  <li key={idx} className="generic-list-item">
                     {typeof item === 'object' ? JSON.stringify(item) : item}
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             );
           }
           return null;
@@ -52,15 +69,9 @@ const SectionRenderer = ({ sectionName, sectionData }) => {
     return <Component {...sectionData} />;
   }
 
-  // Check if it's a custom section
-  try {
-    const customTemplates = JSON.parse(localStorage.getItem('customSectionTemplates') || '{}');
-    if (customTemplates[sectionName]) {
-      // Render as generic section
-      return <GenericSection {...sectionData} />;
-    }
-  } catch {
-    // Silently fail if localStorage access fails
+  // Render any non-built-in section as a generic section
+  if (sectionData) {
+    return <GenericSection {...sectionData} />;
   }
 
   console.warn(`No component found for section: ${sectionName}`);

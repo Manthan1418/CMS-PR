@@ -69,7 +69,7 @@ router.put("/page/:name", async (req, res) => {
   try {
     const pageName = req.params.name;
     const content = req.body;
-    await db.ref(`pages/${pageName}`).update(content);
+    await db.ref(`pages/${pageName}`).set(content);
     res.json({ message: "Page updated successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
